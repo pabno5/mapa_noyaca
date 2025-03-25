@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mapa de Boyacá</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      .municipio {
+        fill: white;
+        stroke: black;
+        stroke-width: 0.3;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      #tooltip {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #333;
+        padding: 5px 10px;
+        pointer-events: none; /* Evita que interfiera con el mouse */
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        border-radius: 3px;
+        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        display: none; /* Oculto por defecto */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="tooltip" style="display: none"></div>
+
+    <script>
+      // Lista de municipios a colorear en rojo
+      const municipiosEnRojo = [
+        "PUERTO BOYACÁ",
+        "SOATÁ",
+        "NUEVO COLÓN",
+        "SANTA ROSA DE VITERBO",
+        "CUCAITA",
+        "BOAVITA",
+        "CUÍTIVA",
+        "RAMIRIQUÍ",
+        "MONIQUIRÁ",
+        "FLORESTA",
+        "MOTAVITA",
+        "LA UVITA",
+        "EL ESPINO",
+        "BERBEO",
+        "RONDÓN",
+        "CÓMBITA",
+        "BETÉITIVA",
+        "FIRAVITOBA",
+        "BOYACÁ",
+        "SAN JOSÉ DE PARE",
+        "TIPACOQUE",
+        "COPER",
+        "PAYA",
+        "CAMPOHERMOSO",
+        "SABOYÁ",
+        "TURMEQUÉ",
+        "PÁEZ",
+        "CIÉNEGA",
+        "SUTAMARCHÁN",
+        "SAN MATEO",
+        "PESCA",
+        "SOCHA",
+        "GAMEZA",
+        "TOGÜÍ",
+        "SORA",
+        "CHISCAS",
+        "EL COCUY",
+        "RÁQUIRA",
+        "BELÉN",
+        "SAN LUIS DE GACENO",
+        "CHINAVITA",
+        "UMBITA",
+        "TIBANÁ",
+        "MACANAL",
+        "IZA",
+        "BRICEÑO",
+        "TOCA",
+        "SANTA MARÍA",
+        "MONGUÍ",
+        "TÓPAGA",
+        "SATIVANORTE",
+        "CHÍQUIZA",
+        "CHIQUINQUIRÁ",
+        "SAN MIGUEL DE SEMA",
+        "PAIPA",
+        "QUÍPAMA",
+        "MUZO",
+        "ZETAQUIRA",
+        "MONGUA",
+        "CHITA",
+        "TUTAZÁ",
+        "SUTATENZA",
+        "PACHAVITA",
+        "AQUITANIA",
+        "CHIVATÁ",
+        "GARAGOA",
+        "PAUNA",
+        "VENTAQUEMADA",
+        "TUTA",
+        "SIACHOQUE",
+      ];
+
+      // Configuración inicial
+      // Configuración inicial
+      const width = 800;
+      const height = 500;
+       let zoomed = false; // Estado del zoom
+
+      // Crear un comportamiento de zoom
+      const zoom = d3
+        .zoom()
+        .scaleExtent([1, 8]) // Escala mínima y máxima del zoom
+        .on("zoom", function (event) {
+          g.attr("transform", event.transform); // Aplicar la transformación al grupo
+        });
+
+      // Cargar datos geográficos
+      d3.json("boyaca_filtered.geojson").then(function (data) {
+        const projection = d3.geoMercator().fitSize([width, height], data);
+
+        const path = d3.geoPath().projection(projection);
+
+        // Crear SVG
+        const svg = d3
+          .select("#map")
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .call(zoom); // Habilitar el zoom en el SVG
+
+        // Crear un grupo para aplicar transformaciones de zoom
+        const g = svg.append("g");
+
+        // Dibujar municipios
+        g.selectAll("path")
+          .data(data.features)
+          .enter()
+          .append("path")
+          .attr("class", "municipio")
+          .attr("d", path)
+          .style("fill", (d) => {
+            // Si el municipio está en la lista, colorearlo de rojo
+            return municipiosEnRojo.includes(d.properties.NOMBRE_MPI)
+              ? "#90EE90"
+              : "#FFFFFF"; // Verde claro por defecto
+          })
+          .style("stroke", "black") // Borde negro
+          .style("stroke-width", "0.5px")
+          .on("mouseover", function (event, d) {
+            // Mostrar el tooltip con el nombre del municipio
+            d3.select("#tooltip")
+              .style("left", event.pageX + 15 + "px")
+              .style("top", event.pageY + 15 + "px")
+              .style("display", "block")
+              .text(d.properties.NOMBRE_MPI);
+          })
+          .on("mousemove", function (event) {
+            // Actualizar la posición del tooltip mientras el mouse se mueve
+            d3.select("#tooltip")
+              .style("left", event.pageX + 15 + "px")
+              .style("top", event.pageY + 15 + "px");
+          })
+          .on("mouseout", function () {
+            // Ocultar el tooltip cuando el mouse salga del municipio
+            d3.select("#tooltip").style("display", "none");
+          })
+          .on("click", function (event, d) {
+            if (!zoomed) {
+                // Obtener el centroide del municipio seleccionado
+                const [[x0, y0], [x1, y1]] = path.bounds(d); // Límites del municipio
+                const dx = x1 - x0; // Ancho del municipio
+                const dy = y1 - y0; // Alto del municipio
+                const x = (x0 + x1) / 2; // Centro X
+                const y = (y0 + y1) / 2; // Centro Y
+                const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))); // Escala de zoom
+                const translate = [width / 2 - scale * x, height / 2 - scale * y]; // Traslación
+    
+                // Aplicar la transformación de zoom
+                g.transition()
+                    .duration(750)
+                    .attr("transform", `translate(${translate}) scale(${scale})`);
+    
+                zoomed = true; // Cambiar el estado a "zoom activado"
+            } else {
+                // Regresar a la posición inicial
+                g.transition()
+                    .duration(750)
+                    .attr("transform", "translate(0,0) scale(1)");
+    
+                zoomed = false; // Cambiar el estado a "zoom desactivado"
+            }
+          });
+
+        // Agregar nombres de municipios
+        g.selectAll("text")
+          .data(data.features)
+          .enter()
+          .append("text")
+          .attr("x", (d) => path.centroid(d)[0]) // Posición X del centroide
+          .attr("y", (d) => path.centroid(d)[1]) // Posición Y del centroide
+          .attr("text-anchor", "middle") // Centrar el texto
+          .attr("font-size", "4px") // Tamaño de la fuente
+          .attr("fill", "black") // Color del texto
+          .text((d) => d.properties.NOMBRE_MPI); // Texto del nombre del municipio
+      });
+    </script>
+  </body>
+</html>
