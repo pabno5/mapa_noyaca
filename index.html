@@ -107,8 +107,9 @@
 
       // Configuración inicial
       // Configuración inicial
-      const width = 1200;
-      const height = 1000;
+    const mapContainer = document.getElementById("map");
+      const width = mapContainer.clientWidth; // Ancho dinámico
+      const height = mapContainer.clientHeight; // Alto dinámico
        let zoomed = false; // Estado del zoom
 
       // Crear un comportamiento de zoom
