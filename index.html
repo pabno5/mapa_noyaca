@@ -209,7 +209,7 @@
           .attr("x", (d) => path.centroid(d)[0]) // Posición X del centroide
           .attr("y", (d) => path.centroid(d)[1]) // Posición Y del centroide
           .attr("text-anchor", "middle") // Centrar el texto
-          .attr("font-size", "6px") // Tamaño de la fuente
+          .attr("font-size", "4px") // Tamaño de la fuente
           .attr("fill", "black") // Color del texto
           .text((d) => d.properties.NOMBRE_MPI); // Texto del nombre del municipio
       });
